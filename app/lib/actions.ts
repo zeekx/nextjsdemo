@@ -52,24 +52,42 @@ export async function createInvoice(formData: FormData) {
     });
     const amountInCents = amount * 100;
     const conn = await db.connect();
-    await conn.sql`
+    try {
+        await conn.sql`
         UPDATE invoices
         SET customer_id = ${customerId}, amount=${amountInCents}, status=${status}
         WHERE id=${id}
       `;
-    conn.release();
+    } catch (error) {
+        console.error('Database connection failed:', error);
+        
+    } finally {
+        conn.release();
+    }
 
     revalidatePath('/dashboard/invoices');
     redirect('/dashboard/invoices');
   }
 
 export async function deleteInvoice(id: string) {
-    const conn = await db.connect();
-    await conn.sql`
-        DELETE FROM invoices
-        WHERE id=${id}
-      `;
-    conn.release();
+    throw new Error('Delete invoice not implemented');
+    // const conn = await db.connect();
+    // await conn.sql`
+    //     DELETE FROM invoices
+    //     WHERE id=${id}
+    //   `;  
+    // conn.release();
+    // try {
+    //     await conn.sql`
+    //     DELETE FROM invoices
+    //     WHERE id=${id}
+    //   `;        
+    // } catch (error) {
+    //     console.error('Database connection failed:', error);
+    // 
+    // } finally {
+    //     conn.release();
+    // }
 
-    revalidatePath('/dashboard/invoices');
+    // revalidatePath('/dashboard/invoices');
 }

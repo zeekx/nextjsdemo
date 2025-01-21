@@ -9,6 +9,7 @@ import {
 } from './definitions';
 import { formatCurrency } from './utils';
 import { db } from "@vercel/postgres";
+import { notFound } from 'next/navigation';
 
 export async function fetchRevenue() {
   try {
@@ -148,8 +149,8 @@ export async function fetchInvoicesPages(query: string) {
 }
 
 export async function fetchInvoiceById(id: string) {
+  const conn = await db.connect();
   try {
-    const conn = await db.connect();
     const data = await conn.sql<InvoiceForm>`
       SELECT
         invoices.id,
@@ -159,17 +160,18 @@ export async function fetchInvoiceById(id: string) {
       FROM invoices
       WHERE invoices.id = ${id};
     `;
-    conn.release();
+    
     const invoice = data.rows.map((invoice) => ({
       ...invoice,
       // Convert amount from cents to dollars
       amount: invoice.amount / 100,
     }));
-
     return invoice[0];
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch invoice.');
+  } finally {
+    conn.release();
   }
 }
 
