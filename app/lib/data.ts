@@ -96,7 +96,8 @@ export async function fetchFilteredInvoices(
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
   try {
-    const invoices = await sql<InvoicesTable>`
+    const conn = await db.connect(); // move this here to create a connection 
+    const invoices = await conn.sql<InvoicesTable>`
       SELECT
         invoices.id,
         invoices.amount,
@@ -116,7 +117,7 @@ export async function fetchFilteredInvoices(
       ORDER BY invoices.date DESC
       LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
     `;
-
+    conn.release();
     return invoices.rows;
   } catch (error) {
     console.error('Database Error:', error);
@@ -126,7 +127,8 @@ export async function fetchFilteredInvoices(
 
 export async function fetchInvoicesPages(query: string) {
   try {
-    const count = await sql`SELECT COUNT(*)
+    const conn = await db.connect();
+    const count = await conn.sql`SELECT COUNT(*)
     FROM invoices
     JOIN customers ON invoices.customer_id = customers.id
     WHERE
@@ -136,7 +138,7 @@ export async function fetchInvoicesPages(query: string) {
       invoices.date::text ILIKE ${`%${query}%`} OR
       invoices.status ILIKE ${`%${query}%`}
   `;
-
+    conn.release();
     const totalPages = Math.ceil(Number(count.rows[0].count) / ITEMS_PER_PAGE);
     return totalPages;
   } catch (error) {
@@ -147,7 +149,8 @@ export async function fetchInvoicesPages(query: string) {
 
 export async function fetchInvoiceById(id: string) {
   try {
-    const data = await sql<InvoiceForm>`
+    const conn = await db.connect();
+    const data = await conn.sql<InvoiceForm>`
       SELECT
         invoices.id,
         invoices.customer_id,
@@ -156,7 +159,7 @@ export async function fetchInvoiceById(id: string) {
       FROM invoices
       WHERE invoices.id = ${id};
     `;
-
+    conn.release();
     const invoice = data.rows.map((invoice) => ({
       ...invoice,
       // Convert amount from cents to dollars
@@ -172,14 +175,15 @@ export async function fetchInvoiceById(id: string) {
 
 export async function fetchCustomers() {
   try {
-    const data = await sql<CustomerField>`
+    const conn = await db.connect();  
+    const data = await conn.sql<CustomerField>`
       SELECT
         id,
         name
       FROM customers
       ORDER BY name ASC
     `;
-
+    conn.release();
     const customers = data.rows;
     return customers;
   } catch (err) {
